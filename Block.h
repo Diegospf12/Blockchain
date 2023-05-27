@@ -20,6 +20,7 @@ typedef string hash_t;
 
 template <class Data>
 class Block{
+    bool valid_block;
     int index;
     int nonce;
     std::time_t timestamp;
@@ -28,13 +29,12 @@ class Block{
     hash_t hash;
     int maxTransactions;
 
-
 public:
     Block():index(0), nonce(0), timestamp(time(nullptr)), maxTransactions(0){};
 
     //_prev_hash = "0000000000000000000000000000000000000000000000000000000000000000"
 
-    Block(int _maxTransactions, hash_t _prev_hash = "0000000000000000000000000000000000000000000000000000000000000000"){
+    Block(int _maxTransactions, hash_t _prev_hash){
         index = 1;
         nonce = 0;
         timestamp = std::time(nullptr);
@@ -50,12 +50,15 @@ public:
     }
 
     void add_transaction(Data* _data){
-        if(transactions.size() < maxTransactions)
+        if(transactions.size() < maxTransactions){
             transactions.push_back(_data);
+            hash = calculateHash();
+        }
         else
             throw("Block is full");
     }
 
+    ///Hashcash
     void mineBlock(int difficulty) {
         string target(difficulty, '0');
         while (hash.substr(0, difficulty) != target) {
@@ -64,8 +67,16 @@ public:
         }
     }
 
+    void set_maxTransaction(int _maxTransactions){
+        maxTransactions = _maxTransactions;
+    }
+
     int get_index() const {
         return index;
+    }
+
+    int get_transactions_count(){
+        return transactions.size();
     }
 
     int get_nonce() const {
@@ -87,7 +98,6 @@ public:
         }
     }
 
-
     int get_maxTransactions() const {
         return maxTransactions;
     }
@@ -100,11 +110,18 @@ public:
         return hash;
     }
 
+    bool isValidBlock(int difficulty){
+        string target(difficulty, '0');
+        if(hash.substr(0, difficulty) == target)
+            return true;
+        return false;
+    }
+
 private:
 
     hash_t calculateHash() const {
         std::stringstream ss;
-        ss << index << nonce << timestamp << transactions.list_to_string() << prev_hash;
+        ss << this->index << this->nonce << this->timestamp << this->transactions.list_to_string() << this->prev_hash;
         return sha256(ss.str());
     }
 
